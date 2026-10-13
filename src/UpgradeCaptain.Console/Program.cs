@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// step-2 · Plan / execute
+// step-3 · Approve
 //
-// Sobre el harness del step-1:
-//   · el agente arranca en modo "plan": propone todos y pregunta, no ejecuta
-//   · al pasar a "execute", un LoopAgent lo re-invoca hasta que no queden todos
-//     pendientes (TodoCompletionLoopEvaluator) o se llegue al tope de iteraciones
+// El agente ya puede actuar sobre el repo de la demo (y SOLO sobre él):
+//   · shell local confinado a demo-workspace/canarias-tours, con lista de denegación
+//   · acceso a ficheros (file_access_*) sobre el mismo directorio
+//   · aprobaciones en consola: leer no pregunta; escribir y ejecutar, sí
 // ─────────────────────────────────────────────────────────────────────────────
 
 #pragma warning disable OPENAI001 // La Responses API es experimental en el SDK de OpenAI.
@@ -18,6 +18,7 @@ using Harness.Shared.Console;
 using Harness.Shared.Console.OpenAI;
 using Harness.Shared.Console.ToolFormatters;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Tools.Shell;
 using Microsoft.Extensions.AI;
 using UpgradeCaptain.Console;
 using UpgradeCaptain.Core;
@@ -47,13 +48,37 @@ IChatClient chatClient =
     .WithInterruptedToolCallRepair()                                  // tras un corte de red, la sesión sigue siendo válida (D-37)
     .WithContextWindowCompaction(maxContextWindowTokens, maxOutputTokens); // compactación integrada, en cada llamada al modelo
 
-// 2. El HarnessAgent: function calling, historial por llamada, compactación, todos, modos, memoria y OTel.
+// 2. Shell local confinado al repo de la demo. NO es un sandbox: la lista de denegación es un filtro
+//    de UX, la frontera real es la aprobación humana (y, en el step-7, la VM por sesión de Foundry).
+await using var shell = new LocalShellExecutor(new LocalShellExecutorOptions
+{
+    WorkingDirectory = paths.RepoDir,
+    ConfineWorkingDirectory = true,          // cada comando vuelve a empezar en el repo
+    CleanEnvironment = true,                 // no hereda variables del proceso (ni FOUNDRY_*, ni AZURE_*): solo PATH, HOME, USER...
+    Environment = new Dictionary<string, string?> { ["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1", ["DOTNET_NOLOGO"] = "1" },
+    Timeout = TimeSpan.FromSeconds(120),     // dotnet build/test en frío puede tardar
+    Policy = new ShellPolicy(denyList:
+    [
+        @"\brm\s+-rf\b",
+        @"\bsudo\b",
+        @"\bgit\s+push\b",
+        @"\bdotnet\s+nuget\s+push\b",
+    ]),
+});
+
+// 3. El HarnessAgent: function calling, historial por llamada, compactación, todos, modos, memoria y OTel.
 AIAgent agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
 {
     ChatOptions = new ChatOptions
     {
         Instructions = Prompt,
-        Tools = UpgradeTools.All,
+        Tools = [.. UpgradeTools.All, shell.AsAIFunction(requireApproval: true)], // run_shell siempre pide aprobación
+    },
+    AIContextProviders = [new ShellEnvironmentProvider(shell)],         // le cuenta al modelo qué shell, SO y herramientas hay
+    FileAccessStore = new FileSystemAgentFileStore(paths.RepoDir),      // file_access_* confinado al repo
+    ToolApprovalAgentOptions = new ToolApprovalAgentOptions
+    {
+        AutoApprovalRules = [FileAccessProvider.ReadOnlyToolsAutoApprovalRule], // leer no pregunta; escribir sí
     },
     DisableWebSearch = true,                                             // nada de web: solo el repo
     AgentModeProviderOptions = new AgentModeProviderOptions { DefaultMode = "plan" },    // primero planifica y pregunta
@@ -73,10 +98,10 @@ AIAgent agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
     OpenTelemetrySourceName = Telemetry.SourceName,                      // "UpgradeCaptain": una sola traza
 });
 
-// 3. Consola reactiva de los samples del harness: streaming, uso de contexto, /todos, /mode, /session-export.
+// 4. Consola reactiva de los samples del harness: streaming, uso de contexto, /todos, /mode, /session-export.
 await HarnessConsole.RunAgentAsync(
     agent,
-    userPrompt: "Prueba: «Prepara la actualización de Teide.Geo a 2.0». Comandos: /todos /mode /session-export /session-import /exit",
+    userPrompt: "Prueba: «Compila la solución» o «Sube los cambios con git push». Comandos: /todos /mode /exit",
     new HarnessConsoleOptions
     {
         Observers =

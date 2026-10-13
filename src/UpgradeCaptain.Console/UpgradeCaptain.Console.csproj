@@ -12,6 +12,7 @@
     <PackageReference Include="Azure.AI.Extensions.OpenAI" />
     <PackageReference Include="Microsoft.Agents.AI.Foundry" />
     <PackageReference Include="Microsoft.Agents.AI.Harness" />
+    <PackageReference Include="Microsoft.Agents.AI.Tools.Shell" />
   </ItemGroup>
 
   <ItemGroup>
