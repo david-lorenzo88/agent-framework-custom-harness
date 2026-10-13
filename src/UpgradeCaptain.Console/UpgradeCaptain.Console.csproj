@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Agents.AI.Foundry" />
     <PackageReference Include="Microsoft.Agents.AI.Harness" />
     <PackageReference Include="Microsoft.Agents.AI.Tools.Shell" />
+    <PackageReference Include="Microsoft.Agents.AI.LocalCodeAct" />
   </ItemGroup>
 
   <ItemGroup>

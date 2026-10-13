@@ -1,10 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// step-3 · Approve
+// step-4 · CodeAct
 //
-// El agente ya puede actuar sobre el repo de la demo (y SOLO sobre él):
-//   · shell local confinado a demo-workspace/canarias-tours, con lista de denegación
-//   · acceso a ficheros (file_access_*) sobre el mismo directorio
-//   · aprobaciones en consola: leer no pregunta; escribir y ejecutar, sí
+// Dos superficies para las mismas 5 tools (--surface direct|codeact):
+//   · direct:  el modelo llama a cada tool y recibe cada resultado completo en su contexto
+//   · codeact: el modelo escribe UN programa Python que llama a las tools con
+//              `await call_tool(...)` y solo devuelve el resumen (execute_code)
+// LocalCodeActProvider ejecuta Python en local: NO es un sandbox.
 // ─────────────────────────────────────────────────────────────────────────────
 
 #pragma warning disable OPENAI001 // La Responses API es experimental en el SDK de OpenAI.
@@ -18,6 +19,7 @@ using Harness.Shared.Console;
 using Harness.Shared.Console.OpenAI;
 using Harness.Shared.Console.ToolFormatters;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.LocalCodeAct;
 using Microsoft.Agents.AI.Tools.Shell;
 using Microsoft.Extensions.AI;
 using UpgradeCaptain.Console;
@@ -66,15 +68,31 @@ await using var shell = new LocalShellExecutor(new LocalShellExecutorOptions
     ]),
 });
 
-// 3. El HarnessAgent: function calling, historial por llamada, compactación, todos, modos, memoria y OTel.
+// 3. CodeAct (solo con --surface codeact): las 5 tools pasan a vivir DENTRO de execute_code.
+//    Python dedicado en .venv/ (scripts/setup-venv.sh), con su ruta explícita.
+using LocalCodeActProvider? codeAct = cli.Surface == "codeact"
+    ? new LocalCodeActProvider(
+        Path.Combine(paths.ProjectRoot, ".venv", "bin", "python"),
+        new LocalCodeActProviderOptions
+        {
+            Tools = UpgradeTools.All.OfType<AIFunction>(),
+            ExecutionLimits = new ProcessExecutionLimits { TimeoutSeconds = 20 },
+        })
+    : null;
+
+// 4. El HarnessAgent: function calling, historial por llamada, compactación, todos, modos, memoria y OTel.
 AIAgent agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
 {
     ChatOptions = new ChatOptions
     {
-        Instructions = Prompt,
-        Tools = [.. UpgradeTools.All, shell.AsAIFunction(requireApproval: true)], // run_shell siempre pide aprobación
+        Instructions = codeAct is null ? Prompt : Prompt + CodeActHint,
+        Tools = codeAct is null
+            ? [.. UpgradeTools.All, shell.AsAIFunction(requireApproval: true)] // direct: el modelo ve las 5 tools
+            : [shell.AsAIFunction(requireApproval: true)],                   // codeact: las ve execute_code
     },
-    AIContextProviders = [new ShellEnvironmentProvider(shell)],         // le cuenta al modelo qué shell, SO y herramientas hay
+    AIContextProviders = codeAct is null
+        ? [new ShellEnvironmentProvider(shell)]                               // qué shell, SO y herramientas hay
+        : [new ShellEnvironmentProvider(shell), codeAct],                     // + la tool execute_code
     FileAccessStore = new FileSystemAgentFileStore(paths.RepoDir),      // file_access_* confinado al repo
     ToolApprovalAgentOptions = new ToolApprovalAgentOptions
     {
@@ -98,10 +116,23 @@ AIAgent agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
     OpenTelemetrySourceName = Telemetry.SourceName,                      // "UpgradeCaptain": una sola traza
 });
 
-// 4. Consola reactiva de los samples del harness: streaming, uso de contexto, /todos, /mode, /session-export.
+// Con CodeAct el modelo tiene que VER el error de su Python (excepción y traceback) para corregirse.
+// Por defecto FunctionInvokingChatClient lo oculta tras "Error: Function failed." (D-32).
+if (codeAct is not null)
+{
+    agent.GetService<FunctionInvokingChatClient>()!.IncludeDetailedErrors = true;
+}
+
+// 5. Sin consola (--prompt): una ejecución y métricas, para scripts/measure-surfaces.sh.
+if (cli.Prompt is not null)
+{
+    return await Headless.RunOnceAsync(agent, cli.Prompt);
+}
+
+// 6. Consola reactiva de los samples del harness: streaming, uso de contexto, /todos, /mode, /session-export.
 await HarnessConsole.RunAgentAsync(
     agent,
-    userPrompt: "Prueba: «Compila la solución» o «Sube los cambios con git push». Comandos: /todos /mode /exit",
+    userPrompt: $"Superficie {cli.Surface}. Prueba: «Haz inventario de las llamadas a Teide.Geo que rompen en 2.0». /exit para salir",
     new HarnessConsoleOptions
     {
         Observers =
@@ -117,3 +148,4 @@ await HarnessConsole.RunAgentAsync(
         ],
         CommandHandlers = HarnessConsoleOptions.BuildDefaultCommandHandlers(agent),
     });
+return 0;
