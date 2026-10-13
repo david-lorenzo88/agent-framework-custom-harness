@@ -1,21 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    UpgradeCaptain.Core: lo que no cambia entre pasos.
-      · Prompts.Prompt     → instrucciones del agente (en español, se leen en el escenario)
-      · UpgradeTools.All   → las 5 tools de solo lectura sobre el repo de la demo
-      · DemoPaths          → dónde están el repo, los avisos y las notas de versión
-      · Telemetry          → OTLP opcional sobre la fuente "UpgradeCaptain"
-      · DotEnv             → carga .env
-      · CompactingChatClient → compactación integrada aplicada en cada llamada (ver docs/verification-log.md, D-07)
-    Desde el step-6 también contiene la factoría (UpgradeCaptainFactory).
+    UpgradeCaptain.Core: lo que comparten la consola y el Hosted Agent.
+      · Prompts.Prompt          → instrucciones del agente (en español, se leen en el escenario)
+      · UpgradeTools.All        → las 5 tools de solo lectura sobre el repo de la demo
+      · DemoPaths               → dónde están el repo, los avisos y las notas de versión
+      · Telemetry               → OTLP opcional sobre la fuente "UpgradeCaptain"
+      · DotEnv                  → carga .env
+    Desde el step-6:
+      · UpgradeCaptainFactory   → Create(UpgradeCaptainOptions) → UpgradeCaptainBuild
   -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.AI" />
-    <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Azure.AI.Extensions.OpenAI" />
+    <PackageReference Include="Microsoft.Agents.AI.Foundry" />
+    <PackageReference Include="Microsoft.Agents.AI.Harness" />
+    <PackageReference Include="Microsoft.Agents.AI.Tools.Shell" />
+    <PackageReference Include="Microsoft.Agents.AI.LocalCodeAct" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UpgradeCaptain.Harness\UpgradeCaptain.Harness.csproj" />
   </ItemGroup>
 
 </Project>
