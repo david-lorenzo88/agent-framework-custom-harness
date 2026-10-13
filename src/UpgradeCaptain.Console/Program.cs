@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// step-4 · CodeAct
+// step-5 · Skills y OTel
 //
-// Dos superficies para las mismas 5 tools (--surface direct|codeact):
-//   · direct:  el modelo llama a cada tool y recibe cada resultado completo en su contexto
-//   · codeact: el modelo escribe UN programa Python que llama a las tools con
-//              `await call_tool(...)` y solo devuelve el resumen (execute_code)
-// LocalCodeActProvider ejecuta Python en local: NO es un sandbox.
+//   · skills en ficheros (skills/): el modelo solo ve nombre y descripción; carga
+//     SKILL.md, referencias y scripts bajo demanda (load_skill, read_skill_resource,
+//     run_skill_script). Leer una skill no pregunta; ejecutar su script, sí.
+//   · telemetría: scripts/aspire.sh + OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+//     y las trazas invoke_agent → chat → execute_tool aparecen en http://localhost:18888
 // ─────────────────────────────────────────────────────────────────────────────
 
 #pragma warning disable OPENAI001 // La Responses API es experimental en el SDK de OpenAI.
@@ -94,9 +94,16 @@ AIAgent agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
         ? [new ShellEnvironmentProvider(shell)]                               // qué shell, SO y herramientas hay
         : [new ShellEnvironmentProvider(shell), codeAct],                     // + la tool execute_code
     FileAccessStore = new FileSystemAgentFileStore(paths.RepoDir),      // file_access_* confinado al repo
+    AgentSkillsSource = new AgentFileSkillsSource(                      // skills/ copiadas junto al ejecutable
+        [paths.SkillsDir],
+        new DotnetScriptRunner(paths.RepoDir).RunAsync),                // los scripts .cs: dotnet run script.cs (.NET 10)
     ToolApprovalAgentOptions = new ToolApprovalAgentOptions
     {
-        AutoApprovalRules = [FileAccessProvider.ReadOnlyToolsAutoApprovalRule], // leer no pregunta; escribir sí
+        AutoApprovalRules =
+        [
+            FileAccessProvider.ReadOnlyToolsAutoApprovalRule,           // leer ficheros no pregunta; escribir sí
+            AgentSkillsProvider.ReadOnlyToolsAutoApprovalRule,          // cargar skills no pregunta; run_skill_script sí
+        ],
     },
     DisableWebSearch = true,                                             // nada de web: solo el repo
     AgentModeProviderOptions = new AgentModeProviderOptions { DefaultMode = "plan" },    // primero planifica y pregunta
@@ -132,7 +139,7 @@ if (cli.Prompt is not null)
 // 6. Consola reactiva de los samples del harness: streaming, uso de contexto, /todos, /mode, /session-export.
 await HarnessConsole.RunAgentAsync(
     agent,
-    userPrompt: $"Superficie {cli.Surface}. Prueba: «Haz inventario de las llamadas a Teide.Geo que rompen en 2.0». /exit para salir",
+    userPrompt: "Prueba: «¿Qué cambia en Teide.Geo 2.0 y cómo lo arreglamos?» o «Sube Teide.Geo a 2.0.0». /exit para salir",
     new HarnessConsoleOptions
     {
         Observers =
