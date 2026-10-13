@@ -11,10 +11,14 @@
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="Azure.AI.Extensions.OpenAI" />
     <PackageReference Include="Microsoft.Agents.AI.Foundry" />
+    <PackageReference Include="Microsoft.Agents.AI.Harness" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\UpgradeCaptain.Core\UpgradeCaptain.Core.csproj" />
+    <!-- Consola reactiva de los samples del harness (vendorizada, ver vendor/README.md) -->
+    <ProjectReference Include="..\..\vendor\Harness_Shared_Console\Harness_Shared_Console.csproj" />
+    <ProjectReference Include="..\..\vendor\Harness_Shared_Console_OpenAI\Harness_Shared_Console_OpenAI.csproj" />
   </ItemGroup>
 
 </Project>
