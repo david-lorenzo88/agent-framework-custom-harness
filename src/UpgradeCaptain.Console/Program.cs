@@ -1,15 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// step-1 · Harness
+// step-2 · Plan / execute
 //
-// Mismo IChatClient, pero ahora AsHarnessAgent monta el arnés completo:
-//   · bucle de function calling con nuestras 5 tools (UpgradeTools.All)
-//   · historial persistido tras CADA llamada al modelo (sesión exportable)
-//   · compactación de contexto (--context tiny para verla)
-//   · todos, modos, memoria en ficheros y telemetría OpenTelemetry
+// Sobre el harness del step-1:
+//   · el agente arranca en modo "plan": propone todos y pregunta, no ejecuta
+//   · al pasar a "execute", un LoopAgent lo re-invoca hasta que no queden todos
+//     pendientes (TodoCompletionLoopEvaluator) o se llegue al tope de iteraciones
 // ─────────────────────────────────────────────────────────────────────────────
 
 #pragma warning disable OPENAI001 // La Responses API es experimental en el SDK de OpenAI.
-#pragma warning disable MAAI001  // Compactación, FileMemoryStore y el cliente sin "store" son experimentales en Agent Framework.
+#pragma warning disable MAAI001  // Compactación, FileMemoryStore, el cliente sin "store" y el bucle son experimentales en Agent Framework.
 
 using System.ClientModel.Primitives;
 using Azure.AI.Extensions.OpenAI;
@@ -57,7 +56,19 @@ AIAgent agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
         Tools = UpgradeTools.All,
     },
     DisableWebSearch = true,                                             // nada de web: solo el repo
-    AgentModeProviderOptions = new AgentModeProviderOptions { DefaultMode = "execute" }, // planificar llega en el step-2
+    AgentModeProviderOptions = new AgentModeProviderOptions { DefaultMode = "plan" },    // primero planifica y pregunta
+    LoopEvaluators =
+    [
+        // Solo en modo "execute": mientras queden todos abiertos, vuelve a invocar al agente.
+        new TodoCompletionLoopEvaluator(new TodoCompletionLoopEvaluatorOptions
+        {
+            Modes = ["execute"],
+            FeedbackMessageTemplate =
+                "Aún quedan tareas abiertas. Sigue trabajando y marca cada una como completada al terminarla. Pendientes:\n"
+                + TodoCompletionLoopEvaluator.RemainingTodosPlaceholder,
+        }),
+    ],
+    LoopAgentOptions = new LoopAgentOptions { MaxIterations = 10 },     // tope de seguridad del bucle
     FileMemoryStore = new FileSystemAgentFileStore(Path.Combine(paths.ProjectRoot, "agent-file-memory")),
     OpenTelemetrySourceName = Telemetry.SourceName,                      // "UpgradeCaptain": una sola traza
 });
@@ -65,7 +76,7 @@ AIAgent agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
 // 3. Consola reactiva de los samples del harness: streaming, uso de contexto, /todos, /mode, /session-export.
 await HarnessConsole.RunAgentAsync(
     agent,
-    userPrompt: "Prueba: «Haz inventario de dónde usamos Teide.Geo». Comandos: /todos /mode /session-export /session-import /exit",
+    userPrompt: "Prueba: «Prepara la actualización de Teide.Geo a 2.0». Comandos: /todos /mode /session-export /session-import /exit",
     new HarnessConsoleOptions
     {
         Observers =
