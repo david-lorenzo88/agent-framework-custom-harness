@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    vendor/ contiene código copiado tal cual de microsoft/agent-framework (ver vendor/README.md).
+    Replica lo que hacía el Directory.Build.props de dotnet/samples en la tag: suprimir MAAI001
+    (APIs experimentales de Agent Framework) en todo el proyecto, para no tocar los ficheros vendorizados.
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);MAAI001</NoWarn>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Canarias.Tours.Api/Canarias.Tours.Api.csproj" />
+    <Project Path="src/Canarias.Tours.Domain/Canarias.Tours.Domain.csproj" />
+    <Project Path="src/Canarias.Tours.Payments/Canarias.Tours.Payments.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Canarias.Tours.Tests/Canarias.Tours.Tests.csproj" />
+  </Folder>
+</Solution>

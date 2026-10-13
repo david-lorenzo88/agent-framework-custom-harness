@@ -1,0 +1,7 @@
+<Project>
+  <!--
+    Barrera de MSBuild: todo lo que hay bajo demo/ simula repos de terceros
+    (la librería Teide.Geo y el repo Canarias.Tours). No deben heredar el
+    Directory.Build.props de la raíz de upgrade-captain.
+  -->
+</Project>

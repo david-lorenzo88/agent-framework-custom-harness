@@ -1,0 +1,6 @@
+<Project>
+  <!-- Barrera de CPM: la librería Teide.Geo no usa la gestión central de paquetes de la raíz. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>

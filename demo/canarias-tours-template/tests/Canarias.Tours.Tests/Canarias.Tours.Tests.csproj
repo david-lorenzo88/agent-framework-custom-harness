@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Teide.Geo" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Canarias.Tours.Domain/Canarias.Tours.Domain.csproj" />
+    <ProjectReference Include="../../src/Canarias.Tours.Payments/Canarias.Tours.Payments.csproj" />
+    <ProjectReference Include="../../src/Canarias.Tours.Api/Canarias.Tours.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

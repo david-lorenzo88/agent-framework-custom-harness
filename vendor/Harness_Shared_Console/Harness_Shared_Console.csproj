@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <!-- upgrade-captain: era un ProjectReference a src/Microsoft.Agents.AI; ahora el paquete fijado en Directory.Packages.props -->
+    <PackageReference Include="Microsoft.Agents.AI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConsoleReactiveFramework\ConsoleReactiveFramework.csproj" />
+    <ProjectReference Include="..\ConsoleReactiveComponents\ConsoleReactiveComponents.csproj" />
+  </ItemGroup>
+
+</Project>

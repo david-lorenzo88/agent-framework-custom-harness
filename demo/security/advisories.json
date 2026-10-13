@@ -1,0 +1,13 @@
+[
+  {
+    "id": "TEIDE-2026-0042",
+    "package": "Teide.Geo",
+    "affected": "< 2.0.0",
+    "fixed": "2.0.0",
+    "severity": "high",
+    "published": "2026-10-06",
+    "title": "Denegación de servicio por expresión regular (ReDoS) en GeoFormat.Parse",
+    "description": "GeoFormat.Parse usa una expresión regular con cuantificadores anidados. Una cadena de coordenadas larga y mal formada provoca backtracking catastrófico y bloquea el hilo. Cualquier endpoint que pase entrada del usuario a GeoFormat.Parse es explotable.",
+    "remediation": "Actualizar a Teide.Geo 2.0.0. No hay parche para 1.x. La 2.0.0 trae cambios incompatibles: ver sus notas de versión."
+  }
+]

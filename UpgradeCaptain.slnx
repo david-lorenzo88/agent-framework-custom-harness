@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/UpgradeCaptain.Console/UpgradeCaptain.Console.csproj" />
+    <Project Path="src/UpgradeCaptain.Core/UpgradeCaptain.Core.csproj" />
+  </Folder>
+  <Folder Name="/vendor/">
+    <Project Path="vendor/ConsoleReactiveComponents/ConsoleReactiveComponents.csproj" />
+    <Project Path="vendor/ConsoleReactiveFramework/ConsoleReactiveFramework.csproj" />
+    <Project Path="vendor/Harness_Shared_Console/Harness_Shared_Console.csproj" />
+    <Project Path="vendor/Harness_Shared_Console_OpenAI/Harness_Shared_Console_OpenAI.csproj" />
+  </Folder>
+</Solution>
