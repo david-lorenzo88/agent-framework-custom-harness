@@ -105,7 +105,7 @@ case "$CMD" in
     if [[ $LOCAL -eq 1 ]]; then
       post "$body" -H "x-agent-user-id: $(json_value "$ROOT/demo/identities.json" "$AS")"
     else
-      warn "En Foundry, x-agent-user-id es TU identidad de az login (protocolo 2.0.0). Con una sola cuenta manda 'approver' porque deploy-hosted.sh pone UPGRADE_CAPTAIN_DEV_IDENTITY=1: dilo en el escenario."
+      warn "En Foundry, x-agent-user-id es TU identidad de az login (protocolo 2.0.0). Con una sola cuenta manda 'approver' porque deploy-hosted.sh pone UPGRADE_CAPTAIN_DEV_IDENTITY=1."
       post "$body"
     fi
     ;;
