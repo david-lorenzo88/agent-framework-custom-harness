@@ -1,0 +1,43 @@
+#pragma warning disable MAAI001 // LoopEvaluator y LoopContext son experimentales en Agent Framework.
+
+using Microsoft.Agents.AI;
+
+namespace UpgradeCaptain.Harness;
+
+/// <summary>
+/// "Terminado" significa que el repo compila y los tests pasan, diga lo que diga el modelo.
+/// Va DESPUÉS de TodoCompletionLoopEvaluator: actúa cuando ya no quedan todos abiertos.
+/// </summary>
+public sealed class VerifiedCompletionEvaluator(RepoVerifier verifier, RepoStateCache cache, GitCheckpoints checkpoints) : LoopEvaluator
+{
+    public override async ValueTask<LoopEvaluation> EvaluateAsync(LoopContext context, CancellationToken cancellationToken = default)
+    {
+        // 1. Solo en modo "execute": mientras planifica no hay nada que verificar.
+        AgentModeProvider? modes = context.Agent.GetService<AgentModeProvider>();
+        if (modes is null || await modes.GetModeAsync(context.Session, cancellationToken) != "execute")
+        {
+            return LoopEvaluation.Stop();
+        }
+
+        // 2. Compila y pasa los tests el harness, no el modelo.
+        VerificationResult result = await verifier.VerifyAsync(cancellationToken);
+        cache.Update(result);
+
+        // 3. Verde: checkpoint en git y fin del bucle.
+        if (result.IsGreen)
+        {
+            await checkpoints.CommitGreenAsync($"chore(deps): verde verificado por Upgrade Captain ({result.Summary})", cancellationToken);
+            return LoopEvaluation.Stop();
+        }
+
+        // 4. Atascado: el mismo fallo 3 veces seguidas → paramos y volvemos al último verde.
+        if (cache.IsStuck)
+        {
+            await checkpoints.RestoreLastGreenAsync("bloqueado", cancellationToken);
+            return LoopEvaluation.Stop();
+        }
+
+        // 5. Rojo: los fallos concretos (fichero, línea, test) vuelven al modelo como feedback.
+        return LoopEvaluation.Continue(result.ToFeedback());
+    }
+}

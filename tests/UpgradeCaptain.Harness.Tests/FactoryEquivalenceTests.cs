@@ -34,7 +34,7 @@ public class FactoryEquivalenceTests : IDisposable
         HarnessShape expected = Step2Shape() with
         {
             ContextProviders = ["ShellEnvironmentProvider", "RepoStateProvider"],
-            LoopEvaluators = ["TodoCompletionLoopEvaluator"], // step-3 añade VerifiedCompletionEvaluator
+            LoopEvaluators = ["TodoCompletionLoopEvaluator", "VerifiedCompletionEvaluator"],
         };
         Assert.Equal(expected, Shape(build.HarnessOptions));
         Assert.IsType<CodeOwnerApprovalAgent>(build.Agent);

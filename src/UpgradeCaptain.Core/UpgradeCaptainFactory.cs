@@ -121,7 +121,8 @@ public static class UpgradeCaptainFactory
         ];
         if (services is not null)
         {
-            // uc3: aquí va el evaluador ("terminado" = compila y pasan los tests), después del de todos.
+            // "Terminado" = compila y pasan los tests. Va después del evaluador de todos.
+            evaluators.Add(new VerifiedCompletionEvaluator(services.Verifier, services.Cache, services.Checkpoints));
         }
 
         List<Func<ToolAutoApprovalRuleContext, ValueTask<bool>>> rules =
