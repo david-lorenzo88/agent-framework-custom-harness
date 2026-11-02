@@ -12,6 +12,8 @@
     <PackageReference Include="Azure.AI.Extensions.OpenAI" />
     <PackageReference Include="Microsoft.Agents.AI.Foundry" />
     <PackageReference Include="Microsoft.Agents.AI.Harness" />
+    <PackageReference Include="Microsoft.Agents.AI.Tools.Shell" />
+    <PackageReference Include="Microsoft.Agents.AI.LocalCodeAct" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +21,11 @@
     <!-- Consola reactiva de los samples del harness (vendorizada, ver vendor/README.md) -->
     <ProjectReference Include="..\..\vendor\Harness_Shared_Console\Harness_Shared_Console.csproj" />
     <ProjectReference Include="..\..\vendor\Harness_Shared_Console_OpenAI\Harness_Shared_Console_OpenAI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Las skills viajan junto al ejecutable: bin/.../skills -->
+    <Content Include="..\..\skills\**\*" LinkBase="skills" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
