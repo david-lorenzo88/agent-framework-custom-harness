@@ -1,20 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- UpgradeCaptain.Console: Program.cs construye el agente a mano en los pasos 1 y 2 (una tag por paso). -->
+  <!--
+    UpgradeCaptain.Console. En los pasos 1 y 2 Program.cs construye el agente a mano;
+    desde el step-3 lo construye UpgradeCaptainFactory (UpgradeCaptain.Core).
+  -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>upgrade-captain</AssemblyName>
     <RootNamespace>UpgradeCaptain.Console</RootNamespace>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Azure.Identity" />
-    <PackageReference Include="Azure.AI.Extensions.OpenAI" />
-    <PackageReference Include="Microsoft.Agents.AI.Foundry" />
-    <PackageReference Include="Microsoft.Agents.AI.Harness" />
-    <PackageReference Include="Microsoft.Agents.AI.Tools.Shell" />
-    <PackageReference Include="Microsoft.Agents.AI.LocalCodeAct" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\UpgradeCaptain.Core\UpgradeCaptain.Core.csproj" />
