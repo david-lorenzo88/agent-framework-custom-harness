@@ -1,0 +1,31 @@
+# Build output
+bin/
+obj/
+out/
+
+# Local secrets (commit .env.example instead)
+.env
+.env.alt
+
+# Reference source (sparse clone of microsoft/agent-framework, see docs/verification-log.md)
+.ref/
+
+# Generated demo artefacts
+demo/feed/*.nupkg
+demo/feed/notes/
+demo-workspace/
+
+# Runtime state written by the harness (approvals, sessions, audit log, checkpoints)
+state/
+agent-file-memory/
+sessions/
+
+# Python virtual env for CodeAct
+.venv/
+
+# Editor / OS noise
+.DS_Store
+*.user
+.idea/
+.claude/*.lock
+TestResults/

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="Teide.Geo" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Canarias.Tours.Domain/Canarias.Tours.Domain.csproj" />
+    <ProjectReference Include="../Canarias.Tours.Payments/Canarias.Tours.Payments.csproj" />
+  </ItemGroup>
+</Project>
