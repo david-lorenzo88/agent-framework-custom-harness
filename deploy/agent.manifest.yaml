@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/AgentSchema/refs/heads/main/schemas/v1.0/AgentManifest.yaml
+# Upgrade Captain como Hosted Agent de Foundry (step-4), protocolo Invocations.
+#   azd ai agent init -m deploy/agent.manifest.yaml --deploy-mode container
+#   azd deploy
+name: upgrade-captain
+displayName: "Upgrade Captain"
+
+description: >
+  Lleva a verde las actualizaciones de dependencias .NET (Teide.Geo 1.8.0 → 2.0.0 en Canarias.Tours):
+  HarnessAgent de Microsoft Agent Framework con evaluador de "terminado = verde", aprobaciones por
+  propietario de código (CODEOWNERS), checkpoints de git, presupuesto de tokens y auditoría con cadena de hashes.
+
+metadata:
+  tags:
+    - AI Agent Hosting
+    - Azure AI AgentServer
+    - Invocations Protocol
+    - Agent Framework
+    - Agent Harness
+
+template:
+  name: upgrade-captain
+  kind: hosted
+  protocols:
+    # 2.0.0: la 1.0.0 ya no se admite, y solo con 2.0.0 la plataforma añade x-agent-user-id (D-39).
+    - protocol: invocations
+      version: 2.0.0
+  # dotnet build + dotnet test dentro de la sesión necesitan CPU y memoria.
+  resources:
+    cpu: "2.0"
+    memory: 4Gi
+  environment_variables:
+    - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
+      value: "{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}"
+parameters:
+  properties: []
+resources: []

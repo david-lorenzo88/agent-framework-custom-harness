@@ -3,6 +3,7 @@
     <Project Path="src/UpgradeCaptain.Console/UpgradeCaptain.Console.csproj" />
     <Project Path="src/UpgradeCaptain.Core/UpgradeCaptain.Core.csproj" />
     <Project Path="src/UpgradeCaptain.Harness/UpgradeCaptain.Harness.csproj" />
+    <Project Path="src/UpgradeCaptain.Hosted/UpgradeCaptain.Hosted.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/UpgradeCaptain.Harness.Tests/UpgradeCaptain.Harness.Tests.csproj" />

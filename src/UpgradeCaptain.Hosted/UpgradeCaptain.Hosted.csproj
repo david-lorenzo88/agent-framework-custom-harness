@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    UpgradeCaptain.Hosted · step-4 · la MISMA factoría detrás de un host Invocations en Foundry.
+    Eventos JSON: upgrade.requested, approval.decided, job.status. Puerto 8088.
+  -->
+  <PropertyGroup>
+    <RootNamespace>UpgradeCaptain.Hosted</RootNamespace>
+    <AssemblyName>UpgradeCaptain.Hosted</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.AI.AgentServer.Invocations" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UpgradeCaptain.Core\UpgradeCaptain.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Las skills viajan junto al ejecutable: /app/skills -->
+    <Content Include="..\..\skills\**\*" LinkBase="skills" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
