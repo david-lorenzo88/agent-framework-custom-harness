@@ -1,149 +1,72 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// step-2 · Approve
+// step-3 · Tu harness
 //
-// Sobre el harness del step-1:
-//   · shell confinado al repo de la demo, con lista de denegación, y acceso a ficheros:
-//     leer no pregunta; escribir y ejecutar comandos piden aprobación en consola
-//   · CodeAct (--surface codeact): las 5 tools pasan a vivir dentro de execute_code
-//   · skills en ficheros (skills/): el modelo solo ve nombre y descripción; carga
-//     SKILL.md, referencias y scripts bajo demanda (load_skill, read_skill_resource,
-//     run_skill_script). Leer una skill no pregunta; ejecutar su script, sí.
-//   · telemetría: scripts/aspire.sh + OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
-//     y las trazas invoke_agent → chat → execute_tool aparecen en http://localhost:18888
+// La construcción del agente sale de aquí y pasa a UpgradeCaptainFactory (UpgradeCaptain.Core),
+// que enchufa al HarnessAgent las piezas a medida de UpgradeCaptain.Harness:
+//   · VerifiedCompletionEvaluator  "terminado" = compila y pasan los tests (lo comprueba el harness)
+//   · CodeOwnerApprovalAgent       aprueba el propietario del código (CODEOWNERS), no quien pide
+//   · GitCheckpoints               commit en verde, vuelta atrás si algo va mal
+//   · RepoStateProvider            estado real del repo en cada ejecución (sobrevive a la compactación)
+//   · BudgetGuard                  tope de tokens por sesión
+//
+//   upgrade-captain [--context normal|tiny] [--surface direct|codeact] [--as <handle>] [--state <estado>]
+//   upgrade-captain run --job demo/jobs/upgrade-teide-geo.json
+//   upgrade-captain approvals list | approve <id> --as <handle> | reject <id> --as <handle> --reason <texto> | audit
 // ─────────────────────────────────────────────────────────────────────────────
 
-#pragma warning disable OPENAI001 // La Responses API es experimental en el SDK de OpenAI.
-#pragma warning disable MAAI001  // Compactación, FileMemoryStore, el cliente sin "store" y el bucle son experimentales en Agent Framework.
-
-using System.ClientModel.Primitives;
-using Azure.AI.Extensions.OpenAI;
-using Azure.AI.Projects;
-using Azure.Identity;
 using Harness.Shared.Console;
 using Harness.Shared.Console.OpenAI;
 using Harness.Shared.Console.ToolFormatters;
 using Microsoft.Agents.AI;
-using Microsoft.Agents.AI.LocalCodeAct;
-using Microsoft.Agents.AI.Tools.Shell;
-using Microsoft.Extensions.AI;
 using UpgradeCaptain.Console;
 using UpgradeCaptain.Core;
-using static UpgradeCaptain.Core.Prompts;
+using UpgradeCaptain.Harness;
 
 DotEnv.Load();
 CliArgs cli = CliArgs.Parse(args);
-using IDisposable? telemetry = Telemetry.StartIfConfigured(); // OTLP solo si OTEL_EXPORTER_OTLP_ENDPOINT existe
+using IDisposable? telemetry = Telemetry.StartIfConfigured();
 
-string endpoint = DotEnv.Require("FOUNDRY_PROJECT_ENDPOINT");
-string model = Environment.GetEnvironmentVariable("FOUNDRY_MODEL") ?? "gpt-5.4";
-DemoPaths paths = DemoPaths.Current;
-var (maxContextWindowTokens, maxOutputTokens) = cli.ContextWindow;
-
-// 1. IChatClient con "store" desactivado: el historial lo guarda el harness, no el servicio.
-//    Si el servicio guardara la conversación, la compactación del lado cliente no cambiaría lo que ve el modelo.
-//    La compactación (ContextWindowCompactionStrategy, integrada) se aplica en cada llamada con CompactingChatClient:
-//    la de HarnessAgentOptions.MaxContextWindowTokens pierde mensajes en 1.24.0 (docs/verification-log.md, D-07).
-IChatClient chatClient =
-    new AIProjectClient(
-        new Uri(endpoint),
-        new DefaultAzureCredential(),
-        new AIProjectClientOptions { RetryPolicy = new ClientRetryPolicy(3) })
-    .GetProjectOpenAIClient()
-    .GetProjectResponsesClientForModel(model)
-    .AsIChatClientWithStoredOutputDisabled(model)
-    .WithInterruptedToolCallRepair()                                  // tras un corte de red, la sesión sigue siendo válida (D-37)
-    .WithContextWindowCompaction(maxContextWindowTokens, maxOutputTokens); // compactación integrada, en cada llamada al modelo
-
-// 2. Shell local confinado al repo de la demo. NO es un sandbox: la lista de denegación es un filtro
-//    de UX, la frontera real es la aprobación humana (y, en el step-4, la VM por sesión de Foundry).
-await using var shell = new LocalShellExecutor(new LocalShellExecutorOptions
+if (cli.State is not null)
 {
-    WorkingDirectory = paths.RepoDir,
-    ConfineWorkingDirectory = true,          // cada comando vuelve a empezar en el repo
-    CleanEnvironment = true,                 // no hereda variables del proceso (ni FOUNDRY_*, ni AZURE_*): solo PATH, HOME, USER...
-    Environment = new Dictionary<string, string?> { ["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1", ["DOTNET_NOLOGO"] = "1" },
-    Timeout = TimeSpan.FromSeconds(120),     // dotnet build/test en frío puede tardar
-    Policy = new ShellPolicy(denyList:
-    [
-        @"\brm\s+-rf\b",
-        @"\bsudo\b",
-        @"\bgit\s+push\b",
-        @"\bdotnet\s+nuget\s+push\b",
-    ]),
-});
-
-// 3. CodeAct (solo con --surface codeact): las 5 tools pasan a vivir DENTRO de execute_code.
-//    Python dedicado en .venv/ (scripts/setup-venv.sh), con su ruta explícita.
-using LocalCodeActProvider? codeAct = cli.Surface == "codeact"
-    ? new LocalCodeActProvider(
-        Path.Combine(paths.ProjectRoot, ".venv", "bin", "python"),
-        new LocalCodeActProviderOptions
-        {
-            Tools = UpgradeTools.All.OfType<AIFunction>(),
-            ExecutionLimits = new ProcessExecutionLimits { TimeoutSeconds = 20 },
-        })
-    : null;
-
-// 4. El HarnessAgent: function calling, historial por llamada, compactación, todos, modos, memoria y OTel.
-AIAgent agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
-{
-    ChatOptions = new ChatOptions
-    {
-        Instructions = codeAct is null ? Prompt : Prompt + CodeActHint,
-        Tools = codeAct is null
-            ? [.. UpgradeTools.All, shell.AsAIFunction(requireApproval: true)] // direct: el modelo ve las 5 tools
-            : [shell.AsAIFunction(requireApproval: true)],                   // codeact: las ve execute_code
-    },
-    AIContextProviders = codeAct is null
-        ? [new ShellEnvironmentProvider(shell)]                               // qué shell, SO y herramientas hay
-        : [new ShellEnvironmentProvider(shell), codeAct],                     // + la tool execute_code
-    FileAccessStore = new FileSystemAgentFileStore(paths.RepoDir),      // file_access_* confinado al repo
-    AgentSkillsSource = new AgentFileSkillsSource(                      // skills/ copiadas junto al ejecutable
-        [paths.SkillsDir],
-        new DotnetScriptRunner(paths.RepoDir).RunAsync),                // los scripts .cs: dotnet run script.cs (.NET 10)
-    ToolApprovalAgentOptions = new ToolApprovalAgentOptions
-    {
-        AutoApprovalRules =
-        [
-            FileAccessProvider.ReadOnlyToolsAutoApprovalRule,           // leer ficheros no pregunta; escribir sí
-            AgentSkillsProvider.ReadOnlyToolsAutoApprovalRule,          // cargar skills no pregunta; run_skill_script sí
-        ],
-    },
-    DisableWebSearch = true,                                             // nada de web: solo el repo
-    AgentModeProviderOptions = new AgentModeProviderOptions { DefaultMode = "plan" },    // primero planifica y pregunta
-    LoopEvaluators =
-    [
-        // Solo en modo "execute": mientras queden todos abiertos, vuelve a invocar al agente.
-        new TodoCompletionLoopEvaluator(new TodoCompletionLoopEvaluatorOptions
-        {
-            Modes = ["execute"],
-            FeedbackMessageTemplate =
-                "Aún quedan tareas abiertas. Sigue trabajando y marca cada una como completada al terminarla. Pendientes:\n"
-                + TodoCompletionLoopEvaluator.RemainingTodosPlaceholder,
-        }),
-    ],
-    LoopAgentOptions = new LoopAgentOptions { MaxIterations = 10 },     // tope de seguridad del bucle
-    FileMemoryStore = new FileSystemAgentFileStore(Path.Combine(paths.ProjectRoot, "agent-file-memory")),
-    OpenTelemetrySourceName = Telemetry.SourceName,                      // "UpgradeCaptain": una sola traza
-});
-
-// Con CodeAct el modelo tiene que VER el error de su Python (excepción y traceback) para corregirse.
-// Por defecto FunctionInvokingChatClient lo oculta tras "Error: Function failed." (D-32).
-if (codeAct is not null)
-{
-    agent.GetService<FunctionInvokingChatClient>()!.IncludeDetailedErrors = true;
+    DemoReset.Run(cli.State); // scripts/reset-demo.sh --state ...
 }
 
-// 5. Sin consola (--prompt): una ejecución y métricas, para scripts/measure-surfaces.sh.
+// 1. Opciones: todo activado en local; las flags eligen superficie, contexto y quién pide el trabajo.
+UpgradeCaptainOptions options = UpgradeCaptainOptions.ForLocal(DemoPaths.Current.RepoDir);
+options.CodeAct = cli.Surface == "codeact" ? CodeActBackend.Local : CodeActBackend.None;
+(options.MaxContextWindowTokens, options.MaxOutputTokens) = cli.ContextWindow;
+options.Requester = cli.As;
+
+// 2. La factoría devuelve el agente y lo que hay que liberar al salir (shell, CodeAct).
+await using UpgradeCaptainBuild build = UpgradeCaptainFactory.Create(options);
+AIAgent agent = build.Agent;
+
+// 3. Subcomandos: aprobaciones (la terminal de María) y ejecución desatendida.
+switch (cli.Rest.ToArray())
+{
+    case ["approvals", .. var rest]:
+        return await ApprovalsCli.RunAsync(build, rest, actor: cli.As);
+    case ["run", "--job", var jobFile]:
+        return await ApprovalsCli.RunJobAsync(build, jobFile);
+    case []:
+        break;
+    default:
+        Console.Error.WriteLine(DemoLanguages.Current.Pick($"Subcomando desconocido: {string.Join(' ', cli.Rest)}", $"Unknown subcommand: {string.Join(' ', cli.Rest)}"));
+        return 1;
+}
+
 if (cli.Prompt is not null)
 {
     return await Headless.RunOnceAsync(agent, cli.Prompt);
 }
 
-// 6. Consola reactiva de los samples del harness: streaming, uso de contexto, /todos, /mode, /session-export.
+// 4. Consola atendida: el trabajo lo pide --as (por defecto @david-lorenzo).
+string jobId = $"console-{DateTime.Now:yyyyMMdd-HHmmss}";
 await HarnessConsole.RunAgentAsync(
     agent,
-    userPrompt: "Prueba: «¿Qué cambia en Teide.Geo 2.0 y cómo lo arreglamos?» o «Sube Teide.Geo a 2.0.0». /exit para salir",
+    userPrompt: DemoLanguages.Current.Pick(
+        $"Pides como {cli.As}. Prueba: «Ya compila. Cierra la actualización: escribe UPGRADE_REPORT.md y listo». /approvals /todos /mode /exit",
+        $"You ask as {cli.As}. Try: \"It already compiles. Close the upgrade: write UPGRADE_REPORT.md and that's it.\" /approvals /todos /mode /exit"),
     new HarnessConsoleOptions
     {
         Observers =
@@ -153,10 +76,16 @@ await HarnessConsole.RunAgentAsync(
                 agent,
                 planModeName: "plan",
                 executionModeName: "execute",
-                maxContextWindowTokens: maxContextWindowTokens,
-                maxOutputTokens: maxOutputTokens,
+                maxContextWindowTokens: options.MaxContextWindowTokens,
+                maxOutputTokens: options.MaxOutputTokens,
                 toolFormatters: ToolCallFormatter.BuildDefaultToolFormatters()),
         ],
-        CommandHandlers = HarnessConsoleOptions.BuildDefaultCommandHandlers(agent),
+        CommandHandlers = [.. HarnessConsoleOptions.BuildDefaultCommandHandlers(agent), new ApprovalsCommandHandler(build.Services!)],
+        SessionFactory = async a =>
+        {
+            AgentSession session = await a.CreateSessionAsync();
+            JobContext.Set(session, new JobContext(jobId, cli.As, Attended: true));
+            return session;
+        },
     });
 return 0;
