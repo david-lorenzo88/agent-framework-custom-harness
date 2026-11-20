@@ -1,0 +1,132 @@
+@page "/"
+@inherits CockpitBase
+
+<PageTitle>Upgrade Captain · @T("Apertura", "Opening")</PageTitle>
+
+@{
+    string tab = this.CurrentTab;
+}
+<div class="page opening">
+    <header class="page-header hero">
+        <div class="hero-mark">⎈</div>
+        <div class="page-heading">
+            <h1 class="hero-title">UPGRADE<b>CAPTAIN</b></h1>
+            <p class="page-goal">@T("Plan, execute, approve: el Agent Harness de Microsoft Agent Framework a fondo", "Plan, execute, approve: Microsoft Agent Framework's Agent Harness in depth")</p>
+            <p class="muted small">David Lorenzo López · .NET · Agent Framework 1.24 · Foundry</p>
+        </div>
+        <div class="hero-actions">
+            <button class="btn btn-go" @onclick="this.Begin">▶ @T("Empezar la charla", "Start the talk")</button>
+            <a class="btn btn-ghost" href="/step/1">1 · Harness →</a>
+        </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+        @foreach (var (id, label) in this.Tabs)
+        {
+            <button class="tab @(id == tab ? "active" : string.Empty)" role="tab" @onclick="() => this.SelectTab(id)">
+                @label
+                @if (id == "preflight" && this.Problems > 0)
+                {
+                    <span class="tab-badge warn">@this.Problems</span>
+                }
+                @if (id == "reality" && this.Cockpit.Reality.Running)
+                {
+                    <span class="spinner tiny"></span>
+                }
+            </button>
+        }
+    </nav>
+
+    <section class="tab-panel @(tab is "reality" ? "fill" : string.Empty)" @key="tab">
+        @switch (tab)
+        {
+            case "case":
+                <div class="case">
+                    <p>@Md(new Bi("**Canarias.Tours**: una solución .NET pequeña (`Api`, `Domain`, `Payments`) que usa **Teide.Geo**, una librería geográfica inventada, para distancias y tarifas.",
+                        "**Canarias.Tours**: a small .NET solution (`Api`, `Domain`, `Payments`) that uses **Teide.Geo**, a made-up geo library, for route distances and tour fares."))</p>
+                    <p>@Md(new Bi("Un aviso de seguridad (`TEIDE-2026-0042`, ReDoS en `GeoFormat.Parse`) afecta a `Teide.Geo < 2.0.0`. Dependabot abre el bump, el PR se pone en rojo y nadie se hace cargo.",
+                        "A security advisory (`TEIDE-2026-0042`, a ReDoS in `GeoFormat.Parse`) affects `Teide.Geo < 2.0.0`. Dependabot opens the bump, the PR goes red, and nobody picks it up."))</p>
+
+                    <h4>@T("Cuatro cambios incompatibles", "Four breaking changes")</h4>
+                    <ol class="breaking">
+                        <li><span class="bc-tag bad">CS0246</span>@Md(new Bi("`GeoPoint` pasa a `Teide.Geo.Primitives`", "`GeoPoint` moves to `Teide.Geo.Primitives`"))</li>
+                        <li><span class="bc-tag bad">CS1061</span>@Md(new Bi("`GetElevation` → `GetElevationAsync`: cascada async hasta la API", "`GetElevation` → `GetElevationAsync`: an async cascade up to the API"))</li>
+                        <li><span class="bc-tag bad">CS0117</span>@Md(new Bi("`GeoFormat.ToDms` desaparece → `GeoPoint.ToString(\"dms\")`", "`GeoFormat.ToDms` disappears → `GeoPoint.ToString(\"dms\")`"))</li>
+                        <li class="trap"><span class="bc-tag ok">@T("compila", "compiles")</span>@Md(new Bi("**`GeoCalculator.Distance` devuelve metros, no km.** Solo lo ven los tests.", "**`GeoCalculator.Distance` now returns metres, not km.** Only the tests notice."))</li>
+                    </ol>
+
+                    <div class="trap-number">
+                        <span class="tn-label">Los Cristianos → Teide</span>
+                        <span class="tn-good">@T("33,66 €", "€33.66")</span>
+                        <span class="tn-arrow">→</span>
+                        <span class="tn-bad">@T("30.663,76 €", "€30,663.76")</span>
+                    </div>
+
+                    <p class="muted">@Md(new Bi("**Propiedad** (`CODEOWNERS`): todo es de `@david-lorenzo` salvo `/src/Canarias.Tours.Payments/`, que es de `@maria-payments`. Arreglar la tarifa es tocar Payments: tiene que aprobar María.",
+                        "**Ownership** (`CODEOWNERS`): everything belongs to `@david-lorenzo` except `/src/Canarias.Tours.Payments/`, which belongs to `@maria-payments`. Fixing the fare means touching Payments, so María has to approve it."))</p>
+                </div>
+                break;
+
+            case "harness":
+                <table class="md-table">
+                    <thead><tr><th>@T("Paso", "Step")</th><th>@T("Qué se añade", "What gets added")</th><th></th></tr></thead>
+                    <tbody>
+                        <tr><td>@T("(diapo)", "(slide)")</td><td>@Md(new Bi("Un `ChatClientAgent`: modelo + prompt, sin tools ni memoria", "A plain `ChatClientAgent`: model + prompt, no tools, no memory"))</td><td><span class="kind builtin">built-in</span></td></tr>
+                        <tr><td><a href="/step/1">1 · Harness</a></td><td>@Md(new Bi("`AsHarnessAgent`: 5 tools, sesión, compactación, OTel, modo plan, bucle de todos", "`AsHarnessAgent`: 5 tools, session, compaction, OTel, plan mode, todo loop"))</td><td><span class="kind builtin">built-in</span></td></tr>
+                        <tr><td><a href="/step/2">2 · Approve</a></td><td>@Md(new Bi("Shell confinado, ficheros, aprobaciones, skills en ficheros, trazas en Aspire", "Confined shell, file edits, approvals, skills as files, traces in Aspire"))</td><td><span class="kind builtin">built-in</span></td></tr>
+                        <tr><td><a href="/step/3">3 · @T("Tu harness", "Your harness")</a></td><td>@Md(new Bi("Las cuatro piezas que arreglan el muro", "The four pieces that fix the wall"))</td><td><span class="kind custom">custom</span></td></tr>
+                        <tr><td><a href="/step/4">4 · Hosted</a></td><td>@Md(new Bi("La misma factoría en Foundry, desatendida, escala a cero", "The same factory in Foundry, unattended, scale to zero"))</td><td><span class="kind builtin">hosting</span></td></tr>
+                    </tbody>
+                </table>
+                <p class="muted">@Md(new Bi("«Harness a medida» = el `HarnessAgent` integrado **más unas piezas en sus puntos de extensión documentados**. No es un bucle escrito desde cero.",
+                    "\"Custom harness\" = the built-in `HarnessAgent` **plus a few pieces plugged into its documented extension points**. Not a loop written from scratch."))</p>
+                <PiecesGrid />
+                break;
+
+            case "preflight":
+                <PreflightPanel />
+                break;
+
+            case "reality":
+                <RealityPanel />
+                break;
+        }
+    </section>
+</div>
+
+@code {
+    private IEnumerable<(string Id, string Label)> Tabs =>
+    [
+        ("case", T("🏝 El caso", "🏝 The use case")),
+        ("harness", T("🧱 El harness", "🧱 The harness")),
+        ("preflight", T("🛫 Antes de empezar", "🛫 Preflight")),
+        ("reality", T("🧪 Realidad", "🧪 Reality")),
+    ];
+
+    private string CurrentTab => this.Tabs.Any(t => t.Id == this.Cockpit.ContentTab) ? this.Cockpit.ContentTab : "case";
+
+    private int Problems => this.Cockpit.Preflight.All.Count(c => c.State is CheckState.Warn or CheckState.Fail);
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        this.Cockpit.ContentTab = "case"; // al llegar, el caso; los lanzadores ⚡ cambian de pestaña después
+
+    }
+
+    private void SelectTab(string id)
+    {
+        this.Cockpit.ContentTab = id;
+        this.Cockpit.NotifyNow();
+    }
+
+    private void Begin()
+    {
+        if (!this.Cockpit.Clock.Running)
+        {
+            this.Cockpit.Clock.Toggle();
+        }
+
+        this.Cockpit.NotifyNow();
+    }
+}

@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/UpgradeCaptain.Console/UpgradeCaptain.Console.csproj" />
+    <Project Path="src/UpgradeCaptain.Core/UpgradeCaptain.Core.csproj" />
+    <Project Path="src/UpgradeCaptain.Harness/UpgradeCaptain.Harness.csproj" />
+    <Project Path="src/UpgradeCaptain.Hosted/UpgradeCaptain.Hosted.csproj" />
+    <Project Path="src/UpgradeCaptain.Web/UpgradeCaptain.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/UpgradeCaptain.Harness.Tests/UpgradeCaptain.Harness.Tests.csproj" />
+  </Folder>
+  <Folder Name="/vendor/">
+    <Project Path="vendor/ConsoleReactiveComponents/ConsoleReactiveComponents.csproj" />
+    <Project Path="vendor/ConsoleReactiveFramework/ConsoleReactiveFramework.csproj" />
+    <Project Path="vendor/Harness_Shared_Console/Harness_Shared_Console.csproj" />
+    <Project Path="vendor/Harness_Shared_Console_OpenAI/Harness_Shared_Console_OpenAI.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    UpgradeCaptain.Console. En los pasos 1 y 2 Program.cs construye el agente a mano;
+    desde el step-3 lo construye UpgradeCaptainFactory (UpgradeCaptain.Core).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>upgrade-captain</AssemblyName>
+    <RootNamespace>UpgradeCaptain.Console</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UpgradeCaptain.Core\UpgradeCaptain.Core.csproj" />
+    <!-- Consola reactiva de los samples del harness (vendorizada, ver vendor/README.md) -->
+    <ProjectReference Include="..\..\vendor\Harness_Shared_Console\Harness_Shared_Console.csproj" />
+    <ProjectReference Include="..\..\vendor\Harness_Shared_Console_OpenAI\Harness_Shared_Console_OpenAI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Las skills viajan junto al ejecutable: bin/.../skills -->
+    <Content Include="..\..\skills\**\*" LinkBase="skills" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\skills-en\**\*" LinkBase="skills-en" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

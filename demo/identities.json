@@ -1,0 +1,6 @@
+{
+  "_comment": "Handle de CODEOWNERS → id de objeto de Entra (x-agent-user-id) para el Hosted Agent (step-4). Rellenar en la fase 8 con los ids reales del tenant de la demo.",
+  "@david-lorenzo": "00000000-0000-0000-0000-000000000001",
+  "@maria-payments": "00000000-0000-0000-0000-000000000002",
+  "@dependabot": "00000000-0000-0000-0000-000000000003"
+}

@@ -1,0 +1,41 @@
+@inherits CockpitBase
+
+@* step-3b · las cuatro piezas del harness a medida, cada una en su punto de extensión documentado. *@
+<section class="pieces">
+    <div class="pieces-grid">
+        @foreach (var (icon, name, point, wall, snippet) in this.Pieces)
+        {
+            <button class="piece @(name == "VerifiedCompletionEvaluator" ? "hero" : string.Empty)" @onclick="() => this.OnSelect.InvokeAsync(snippet)">
+                <span class="piece-icon">@icon</span>
+                <span class="piece-name">@name</span>
+                <span class="piece-point">@point</span>
+                <span class="piece-wall">@T(wall)</span>
+            </button>
+        }
+    </div>
+
+    <pre class="tree"><span class="t-custom">CodeOwnerApprovalAgent</span>          <span class="t-note">@T("a medida: aparca lo protegido para su propietario, auditoría", "custom: parks protected edits for the owner, audit log")</span>
+  └─ <span class="t-builtin">HarnessAgent</span>               <span class="t-note">@T("integrado: bucle, aprobaciones, modos, todos, skills, ficheros, OTel", "built-in: loop, approvals, modes, todos, skills, file access, OTel")</span>
+       ├─ LoopEvaluators: <span class="t-builtin">TodoCompletion</span> → <span class="t-custom">VerifiedCompletion</span>
+       ├─ context providers: built-in + <span class="t-custom">RepoStateProvider</span>
+       └─ chat pipeline → <span class="t-custom">BudgetGuard</span> → CompactingChatClient → Foundry (Responses API)</pre>
+</section>
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnSelect { get; set; }
+
+    private IEnumerable<(string Icon, string Name, string Point, Bi Wall, string Snippet)> Pieces =>
+    [
+        ("✔", "VerifiedCompletionEvaluator", "LoopEvaluators",
+            new("«Terminado» es lo que diga el modelo (o lo que permita el prompt)", "\"Done\" is whatever the model says (or the prompt allows)"), "s3-evaluator"),
+        ("👩‍💻", "CodeOwnerApprovalAgent", "DelegatingAIAgent",
+            new("Aprueba quien lo pidió · + CodeOwnersPolicy, ApprovalStore, AuditLog", "The requester is the approver · + CodeOwnersPolicy, ApprovalStore, AuditLog"), "s3-owner"),
+        ("↩", "GitCheckpoints", "evaluator + approvals",
+            new("No hay deshacer: commit en verde, vuelta al último verde", "No undo: commit on green, back to the last green"), "s3-evaluator"),
+        ("🧭", "RepoStateProvider", "AIContextProviders",
+            new("La compactación puede perder los errores exactos", "Compaction can drop the exact errors"), "s3-state"),
+        ("💸", "BudgetGuard", "DelegatingChatClient",
+            new("Sin tope de coste (solo de iteraciones)", "No cost cap (only an iteration cap)"), "s3-budget"),
+    ];
+}

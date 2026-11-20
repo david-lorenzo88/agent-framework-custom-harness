@@ -1,0 +1,18 @@
+@inherits CockpitBase
+
+@* Qué agente hay montado, en qué modo y qué está haciendo. *@
+@{
+    AgentRunner agent = this.Cockpit.Agent;
+}
+<div class="pill agent-pill state-@agent.State.ToString().ToLowerInvariant()" title="@T("Agente activo", "Active agent")">
+    <span class="dot"></span>
+    @if (agent.Stage is { } stage)
+    {
+        <span>@AgentRunner.StageName(stage)</span>
+        <span class="mode mode-@agent.Mode">@agent.Mode</span>
+    }
+    else
+    {
+        <span>@T("sin agente", "no agent")</span>
+    }
+</div>

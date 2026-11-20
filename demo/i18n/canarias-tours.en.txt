@@ -1,0 +1,52 @@
+-- Traducción al inglés del repo de la demo (plantilla y reference-fix). La aplica scripts/reset-demo.sh --lang en
+-- antes de cada commit: cada línea es «texto en español => texto en inglés», sustitución literal, en este orden
+-- (las más largas primero cuando una contiene a otra). Las líneas que empiezan por -- son comentarios.
+Punto de interés desconocido: '{slug}'. => Unknown point of interest: '{slug}'.
+// Antes cada vista llamaba a GeoFormat.ToDms(punto) por su cuenta; ahora se centraliza en Format. => // Each view used to call GeoFormat.ToDms(point) on its own; now it's centralized in Format.
+// Nota: GeoCalculator.Distance devuelve kilómetros, por eso PerKmRate va en €/km. => // Note: GeoCalculator.Distance returns kilometers, that's why PerKmRate is in €/km.
+// TODO(perf): GetElevation(...) recorre la tabla entera en cada llamada; cachear si la tabla crece. => // TODO(perf): GetElevation(...) scans the whole table on every call; cache it if the table grows.
+A partir de esta distancia el traslado se considera de larga distancia. => From this distance on, a transfer counts as long distance.
+Acepta un slug conocido o coordenadas crudas <c>"lat, lon"</c> enviadas por el cliente. => Accepts a known slug or raw <c>"lat, lon"</c> coordinates sent by the client.
+Bajada de bandera, en euros. => Flag fall, in euros.
+Coordenadas de salida y llegada en DMS, para el PDF del bono. => Departure and arrival coordinates in DMS, for the voucher PDF.
+Desglose para el ticket: kilómetros, bajada de bandera, importe por distancia y total. => Breakdown for the receipt: kilometers, flag fall, distance charge and total.
+Desnivel en metros (positivo si se sube). => Elevation gain in meters (positive when climbing).
+Devuelve el punto de un slug conocido. => Returns the point for a known slug.
+Distancia directa en kilómetros entre dos puntos de interés. => Straight-line distance in kilometers between two points of interest.
+Ida y vuelta: dos tarifas sencillas. => Round trip: two single fares.
+Kilómetros totales del itinerario. => Total kilometers of the itinerary.
+Los traslados largos llevan un suplemento de conductor. => Long transfers carry a driver surcharge.
+Ordena las paradas visitando siempre la más cercana y devuelve el itinerario. => Orders the stops by always visiting the nearest one and returns the itinerary.
+Precio por kilómetro, en euros. => Price per kilometer, in euros.
+Punto cardinal hacia el que hay que salir de <paramref name="from"/> para llegar a <paramref name="to"/>. => Compass point to head towards from <paramref name="from"/> to reach <paramref name="to"/>.
+Todos los puntos, indexados por su identificador corto (slug). => All the points, indexed by their short identifier (slug).
+Una línea por tramo, con el destino en formato DMS para el guía. => One line per leg, with the destination in DMS format for the guide.
+Una única bajada de bandera más el precio por kilómetro de todos los tramos. => A single flag fall plus the per-kilometer price of all the legs.
+<!-- Dependencias de producción --> => <!-- Production dependencies -->
+# Propietarios del código de Canarias.Tours (semántica de GitHub: gana la última regla que coincide). => # Code owners of Canarias.Tours (GitHub semantics: the last matching rule wins).
+(también acepta "lat, lon") => (also accepts "lat, lon")
+Convierte rumbos en puntos cardinales para los guías. => Turns bearings into compass points for the guides.
+Desglose de una tarifa. => Breakdown of a fare.
+El planificador trabaja en kilómetros. => The planner works in kilometers.
+Elevaciones de los puntos de interés, para la web y las fichas de dificultad. => Elevations of the points of interest, for the website and the difficulty cards.
+Elevaciones de los puntos de interés. => Elevations of the points of interest.
+Ficha de un punto de interés para la web. => Point-of-interest card for the website.
+Formato DMS y resolución de puntos de interés. => DMS format and point-of-interest resolution.
+Planifica rutas entre puntos de interés con la heurística del vecino más cercano. => Plans routes between points of interest with the nearest-neighbor heuristic.
+Precio de excursiones con varias paradas. => Pricing for excursions with several stops.
+Puntos de interés de Tenerife incluidos en nuestras excursiones. => Points of interest in Tenerife included in our excursions.
+Resultado del planificador: tramos en orden de visita. => Planner result: legs in visiting order.
+Tarifas de traslado en euros. Propiedad del equipo de pagos (@maria-payments). => Transfer fares in euros. Owned by the payments team (@maria-payments).
+Tarifas en euros: bajada de bandera 3,00 € + 1,20 €/km. => Fares in euros: €3.00 flag fall + €1.20/km.
+Un tramo de una ruta: origen, destino, kilómetros y rumbo. => A leg of a route: origin, destination, kilometers and bearing.
+km, rumbo {Compass.ToPoint(leg.BearingDegrees)} (destino { => km, bearing {Compass.ToPoint(leg.BearingDegrees)} (destination {
+"SO", "O", "NO"] => "SW", "W", "NW"]
+Assert.Equal("O", Compass.Heading( => Assert.Equal("W", Compass.Heading(
+-- README
+Backend de reservas de excursiones por Tenerife. => Booking backend for excursions around Tenerife.
+| Proyecto | Qué hace | Propietario | => | Project | What it does | Owner |
+| Puntos de interés, planificador de rutas, itinerarios | => | Points of interest, route planner, itineraries |
+| Tarifas de traslado en euros | => | Transfer fares in euros |
+| API mínima: => | Minimal API:
+| Tests xUnit | => | xUnit tests |
+Dependencia geográfica: **Teide.Geo** (gestión central de paquetes en `Directory.Packages.props`). => Geo dependency: **Teide.Geo** (central package management in `Directory.Packages.props`).

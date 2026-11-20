@@ -1,0 +1,68 @@
+@inherits CockpitBase
+
+@* «¿Qué dice la realidad?»: dotnet build / test y git en el repo de la demo, sin agente ni modelo (el antiguo T3). *@
+@{
+    Terminal terminal = this.Cockpit.Reality;
+}
+<section class="reality panel @(this.Compact ? "compact" : string.Empty)">
+    <header class="panel-head">
+        <h3>🧪 @T("Realidad", "Reality") <small>demo-workspace/canarias-tours</small></h3>
+        <div class="reality-actions">
+            <button class="btn small" disabled="@terminal.Running" @onclick="this.Cockpit.BuildRepoAsync">dotnet build</button>
+            <button class="btn small" disabled="@terminal.Running" @onclick="this.Cockpit.TestRepoAsync">dotnet test</button>
+            <button class="btn small btn-ghost" disabled="@terminal.Running" @onclick="this.Cockpit.GitLogAsync">git log</button>
+            <button class="btn small btn-ghost" disabled="@terminal.Running" @onclick="this.Cockpit.GitDiffAsync">git diff</button>
+            @if (terminal.Running)
+            {
+                <button class="btn small btn-stop" @onclick="terminal.Cancel">^C</button>
+            }
+            else
+            {
+                <button class="btn small btn-ghost" title="@T("Limpiar", "Clear")" @onclick="terminal.Clear">⌫</button>
+            }
+        </div>
+    </header>
+
+    <div class="reality-scores">
+        @if (terminal.LastBuildOk is { } buildOk)
+        {
+            <div class="score @(buildOk ? "good" : "bad")"><span class="score-label">build</span><span class="score-value">@(buildOk ? "✅" : "❌")</span></div>
+        }
+        @if (terminal.LastTests is { } tests)
+        {
+            <div class="score @(tests.Green ? "good" : "bad") pop" @key="tests">
+                <span class="score-label">tests</span>
+                <span class="score-value">@tests.Passed/@tests.Total</span>
+                @if (!tests.Green)
+                {
+                    <span class="score-fail">@tests.Failed @T("en rojo", "red")</span>
+                }
+            </div>
+        }
+        @if (terminal.Running)
+        {
+            <div class="score running"><span class="spinner"></span>@terminal.Title</div>
+        }
+    </div>
+
+    <pre class="terminal" data-autoscroll>@foreach (TerminalLine line in terminal.Lines)
+{<span class="tl tl-@line.Tone.ToString().ToLowerInvariant()">@this.Render(line)</span>
+}</pre>
+</section>
+
+@code {
+    [Parameter]
+    public bool Compact { get; set; }
+
+    // En las líneas de fallo, los importes (30663.76, 33.66) brillan: es el número en el que hay que pararse.
+    private MarkupString Render(TerminalLine line)
+    {
+        string html = System.Net.WebUtility.HtmlEncode(line.Text);
+        if (line.Tone == LineTone.Bad)
+        {
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"(?<![:\d.,])\b\d{1,3}(?:[.,]?\d{3})*[.,]\d{2}\b(?!:)", "<mark>$0</mark>");
+        }
+
+        return new MarkupString(html.Length == 0 ? " " : html);
+    }
+}

@@ -1,0 +1,98 @@
+@inherits CockpitBase
+
+@* El plan estructurado del modo plan (PlanningResponse): preguntas con opciones o un plan para aprobar o editar. *@
+@{ this.ConsumeDraft(); }
+<article class="card plan-card @(this.Entry.Complete ? "answered" : "pending") @(this.Entry.IsApproval ? "is-approval" : "is-clarification")">
+    <header>
+        <span class="card-icon">@(this.Entry.IsApproval ? "🗺️" : "❓")</span>
+        <span class="card-title">@(this.Entry.IsApproval ? T("Plan para aprobar", "Plan to approve") : T("Necesito aclarar", "Needs clarification"))</span>
+        <span class="badge">PlanningResponse · @this.Entry.Plan.Type</span>
+    </header>
+
+    @for (int q = 0; q < this.Entry.Plan.Questions.Count; q++)
+    {
+        int index = q;
+        PlanningQuestion question = this.Entry.Plan.Questions[index];
+        string? answer = this.Entry.Answers[index];
+        <section class="plan-question">
+            <div class="md">@Markdown.ToHtml(question.Message)</div>
+            @if (answer is null)
+            {
+                <div class="choices">
+                    @if (this.Entry.IsApproval)
+                    {
+                        <button class="btn btn-go" @onclick="() => this.AnswerAsync(index, AgentRunner.ApprovePlan)">▶ @T("Aprobar y pasar a modo execute", "Approve and switch to execute mode")</button>
+                    }
+                    else
+                    {
+                        @foreach (string choice in question.Choices ?? [])
+                        {
+                            <button class="btn btn-choice" @onclick="() => this.AnswerAsync(index, choice)">@choice</button>
+                        }
+                    }
+                </div>
+                <div class="free-answer">
+                    <input class="input" placeholder="@(this.Entry.IsApproval ? T("✏️ Cambia el plan… (o ⚡ › Insertar)", "✏️ Change the plan… (or ⚡ › Insert)") : T("✏️ Otra respuesta…", "✏️ Another answer…"))"
+                           @bind="this._custom[index]" @bind:event="oninput"
+                           @onkeydown="e => this.OnKeyAsync(e, index)" />
+                    <button class="btn" disabled="@string.IsNullOrWhiteSpace(this.Custom(index))" @onclick="() => this.AnswerAsync(index, this.Custom(index))">@T("Enviar", "Send")</button>
+                </div>
+            }
+            else
+            {
+                <div class="answer answer-yes">└─ @(answer == AgentRunner.ApprovePlan ? T("✅ Aprobado: modo execute", "✅ Approved: execute mode") : answer)</div>
+            }
+        </section>
+    }
+</article>
+
+@code {
+    private string[] _custom = [];
+
+    [Parameter, EditorRequired]
+    public PlanEntry Entry { get; set; } = default!;
+
+    private string Custom(int index) => index < this._custom.Length ? this._custom[index] : string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (this._custom.Length != this.Entry.Plan.Questions.Count)
+        {
+            this._custom = [.. Enumerable.Repeat(string.Empty, this.Entry.Plan.Questions.Count)];
+        }
+    }
+
+    /// <summary>
+    /// Con el plan pendiente el cuadro de mensaje está desactivado: lo que se inserta desde el lanzador ⚡
+    /// («El informe lo escribo yo, quítalo») pasa a la respuesta libre de la primera pregunta sin contestar.
+    /// </summary>
+    private void ConsumeDraft()
+    {
+        if (this.Entry.Complete || string.IsNullOrWhiteSpace(this.Cockpit.Draft) || this.Cockpit.Agent.State != RunState.AwaitingUser)
+        {
+            return;
+        }
+
+        if (this._custom.Length != this.Entry.Plan.Questions.Count)
+        {
+            this.OnParametersSet();
+        }
+
+        int open = Array.FindIndex(this.Entry.Answers, a => a is null);
+        if (open >= 0)
+        {
+            this._custom[open] = this.Cockpit.Draft;
+            this.Cockpit.Draft = string.Empty;
+        }
+    }
+
+    private async Task AnswerAsync(int index, string answer) => await this.Cockpit.Agent.AnswerAsync(this.Entry, index, answer);
+
+    private async Task OnKeyAsync(KeyboardEventArgs e, int index)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(this.Custom(index)))
+        {
+            await this.AnswerAsync(index, this.Custom(index));
+        }
+    }
+}

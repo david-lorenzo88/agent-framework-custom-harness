@@ -1,0 +1,13 @@
+[
+  {
+    "id": "TEIDE-2026-0042",
+    "package": "Teide.Geo",
+    "affected": "< 2.0.0",
+    "fixed": "2.0.0",
+    "severity": "high",
+    "published": "2026-10-06",
+    "title": "Regular expression denial of service (ReDoS) in GeoFormat.Parse",
+    "description": "GeoFormat.Parse uses a regular expression with nested quantifiers. A long, malformed coordinate string causes catastrophic backtracking and blocks the thread. Any endpoint that passes user input to GeoFormat.Parse is exploitable.",
+    "remediation": "Upgrade to Teide.Geo 2.0.0. There is no patch for 1.x. 2.0.0 brings breaking changes: see its release notes."
+  }
+]
