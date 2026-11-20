@@ -160,7 +160,7 @@ public class EnglishTests : IDisposable
         Assert.True(step3Pre.Services!.English);
 
         await using UpgradeCaptainBuild step3 = UpgradeCaptainFactory.Create(Step(shell: true, skills: true, custom: true, verified: true));
-        Assert.Equal(["TodoCompletionLoopEvaluator"], step3.HarnessOptions.LoopEvaluators!.Select(e => e.GetType().Name));
+        Assert.Equal(["TodoCompletionLoopEvaluator", "VerifiedCompletionEvaluator"], step3.HarnessOptions.LoopEvaluators!.Select(e => e.GetType().Name));
     }
 
     [Fact]
