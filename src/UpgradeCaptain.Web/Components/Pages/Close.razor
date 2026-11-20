@@ -1,0 +1,40 @@
+@page "/close"
+@inherits CockpitBase
+
+<PageTitle>Upgrade Captain · @T("Cierre", "Close")</PageTitle>
+
+<div class="close-page">
+    <h1 class="close-title">@T("Lo que te llevas", "Takeaways")</h1>
+    <div class="takeaways">
+        @{ int i = 0; }
+        @foreach (var (icon, text) in this.Items)
+        {
+            <article class="panel takeaway enter" style="--d:@(i++)">
+                <span class="takeaway-icon">@icon</span>
+                <p>@Md(text)</p>
+            </article>
+        }
+    </div>
+
+    <section class="panel resources enter" style="--d:6">
+        <h3>🔗 @T("Recursos", "Resources")</h3>
+        <ul>
+            <li><a href="https://github.com/microsoft/agent-framework" target="_blank" rel="noopener">github.com/microsoft/agent-framework</a> · <code>dotnet/samples/02-agents/Harness</code></li>
+            <li>@Md(new Bi("Este repo: `docs/demo-guide.md`, `docs/architecture.md`, `docs/verification-log.md` (lo que la realidad corrigió del plan).", "This repo: `docs/demo-guide.md`, `docs/architecture.md`, `docs/verification-log.md` (what reality corrected in the plan)."))</li>
+        </ul>
+        <p class="thanks">@T("¡Gracias! · Preguntas", "Thank you! · Questions")</p>
+    </section>
+</div>
+
+@code {
+    private IEnumerable<(string Icon, Bi Text)> Items =>
+    [
+        ("⎈", new("`AsHarnessAgent` trae el bucle entero: tools, sesión, compactación, modos, todos, aprobaciones, skills y OTel. Empieza por ahí, no por un bucle propio.",
+            "`AsHarnessAgent` brings the whole loop: tools, session, compaction, modes, todos, approvals, skills and OTel. Start there, not with your own loop.")),
+        ("🗺️", new("Modo plan: el plan es un contrato que se edita antes de ejecutar.", "Plan mode: the plan is a contract you edit before anything runs.")),
+        ("🔐", new("Las aprobaciones son la puerta; la lista de denegación es UX. La política sigue mandando después del sí.", "Approvals are the gate; the deny list is UX. The policy still applies after the yes.")),
+        ("✔", new("«Terminado» lo decide **el harness** (`LoopEvaluator`), no el modelo ni el prompt.", "\"Done\" is decided by **the harness** (`LoopEvaluator`), not by the model or the prompt.")),
+        ("👩‍💻", new("Aprueba quien es dueño del código, nunca quien pidió el cambio (`DelegatingAIAgent`).", "The approver is whoever owns the code, never whoever asked for the change (`DelegatingAIAgent`).")),
+        ("☁️", new("La misma factoría se aloja tal cual en Foundry: desatendida, aparcada y a cero mientras espera a una persona.", "The same factory is hosted as is in Foundry: unattended, parked and at zero while it waits for a human.")),
+    ];
+}

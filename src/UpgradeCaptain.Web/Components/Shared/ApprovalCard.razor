@@ -1,0 +1,57 @@
+@inherits CockpitBase
+
+@* Aprobación integrada del harness (ToolApprovalRequestContent): la decide quien está delante, con el diff a la vista. *@
+<article class="card approval-card @(this.Entry.Answer is null ? "pending" : "answered") fam-@ToolText.Family(this.Entry.ToolName)">
+    <header>
+        <span class="card-icon">🔐</span>
+        <span class="card-title">@T("Aprobación de tool", "Tool approval")</span>
+        <code class="tool-summary">@this.Entry.Summary</code>
+        @if (this.Entry.Preview is { Protected: true })
+        {
+            <span class="badge badge-protected">@T("protegido · CODEOWNERS", "protected · CODEOWNERS")</span>
+        }
+    </header>
+
+    @if (this.Entry.Preview is { } preview)
+    {
+        <div class="diff" title="@preview.Path">
+            <div class="diff-file">✎ @preview.Path</div>
+            <pre><code>@foreach (DiffLine line in preview.Lines)
+{<span class="dl dl-@line.Kind.ToString().ToLowerInvariant()"><span class="dn">@(line.OldNumber?.ToString() ?? string.Empty)</span><span class="dn">@(line.NewNumber?.ToString() ?? string.Empty)</span><span class="dm">@(line.Kind switch { DiffKind.Added => "+", DiffKind.Removed => "−", DiffKind.Gap => "", _ => " " })</span><span class="dt">@line.Text</span></span>
+}</code></pre>
+        </div>
+    }
+    else if (this.Entry.Call?.Arguments is { Count: > 0 } arguments && ToolText.Family(this.Entry.ToolName) != "shell")
+    {
+        <pre class="args">@ToolText.Pretty(arguments)</pre>
+    }
+
+    @if (this.Entry.Answer is null)
+    {
+        <div class="actions">
+            <button class="btn btn-go" @onclick="() => this.Answer(ApprovalChoice.Approve)">✅ @T("Aprobar", "Approve")</button>
+            <button class="btn btn-ghost" @onclick="() => this.Answer(ApprovalChoice.AlwaysArguments)">@T("Siempre (estos argumentos)", "Always (these args)")</button>
+            <button class="btn btn-ghost" @onclick="() => this.Answer(ApprovalChoice.AlwaysTool)">@T("Siempre (esta tool)", "Always (this tool)")</button>
+            <button class="btn btn-stop" @onclick="() => this.Answer(ApprovalChoice.Deny)">⛔ @T("Denegar", "Deny")</button>
+        </div>
+    }
+    else
+    {
+        <div class="answer answer-@(this.Entry.Answer == ApprovalChoice.Deny ? "no" : "yes")">
+            @(this.Entry.Answer switch
+            {
+                ApprovalChoice.Deny => T("❌ Denegada", "❌ Denied"),
+                ApprovalChoice.AlwaysTool => T("✅ Aprobada siempre (cualquier argumento)", "✅ Always approved (any args)"),
+                ApprovalChoice.AlwaysArguments => T("✅ Aprobada siempre (estos argumentos)", "✅ Always approved (these args)"),
+                _ => T("✅ Aprobada", "✅ Approved"),
+            })
+        </div>
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public ApprovalEntry Entry { get; set; } = default!;
+
+    private void Answer(ApprovalChoice choice) => this.Cockpit.Agent.Answer(this.Entry, choice);
+}
